@@ -313,7 +313,7 @@
                 <span class="candid-checkbox-label">
                     <span class="candid-checkbox-title">Live Streaming</span>
                 </span>
-                <span class="candid-checkbox-price">$800</span>
+                <span class="candid-checkbox-price">$400</span>
             </label>
         </div>
         
@@ -342,7 +342,11 @@
             </div>
             <div class="candid-result-row" id="liveStreamRow" style="display: none;">
                 <span>Live Streaming</span>
-                <span>$800</span>
+                <span>$400</span>
+            </div>
+            <div class="candid-result-row" id="closestStudioRow" style="display: none;">
+                <span>Closest Studio</span>
+                <span id="closestStudioName" style="font-size: 12px; color: #666;">-</span>
             </div>
             <div class="candid-result-row">
                 <span>Travel Fee</span>
@@ -373,9 +377,21 @@
             minEditingHours: 3,
             secondShooterRate: 150,
             droneRate: 400,
-            liveStreamRate: 800,
+            liveStreamRate: 400,
             travelRate: 0.73,
-            studioLocation: { lat: 39.7392, lng: -104.9903 } // Denver, CO
+            studioLocations: [
+                { name: "Denver, CO", lat: 39.7392, lng: -104.9903, address: "9620 W 54th Pl, Arvada, CO 80002" },
+                { name: "Colorado Springs, CO", lat: 38.8339, lng: -104.8214, address: "9858 Palomino Trail, Colorado Springs, CO" },
+                { name: "Fort Collins, CO", lat: 40.5853, lng: -105.0844, address: "335 Zephyr Way, Fort Collins, CO" },
+                { name: "West Palm Beach, FL", lat: 26.7153, lng: -80.0534, address: "1118 25th St, West Palm Beach, FL" },
+                { name: "Orlando, FL", lat: 28.5384, lng: -81.3789, address: "69 W Center St, Orlando, FL" },
+                { name: "Fort Lauderdale, FL", lat: 26.1224, lng: -80.1373, address: "210 17th St, Fort Lauderdale, FL" },
+                { name: "Tampa, FL", lat: 27.9506, lng: -82.4572, address: "711 N Franklin St, Tampa, FL" },
+                { name: "Jacksonville, FL", lat: 30.3322, lng: -81.6557, address: "1051 Park St, Jacksonville, FL" },
+                { name: "Miami, FL", lat: 25.7617, lng: -80.1918, address: "100 N Miami Ave, Miami, FL" },
+                { name: "Cleveland, OH", lat: 41.4993, lng: -81.6944, address: "230 W Huron Rd, Cleveland, OH" },
+                { name: "Columbus, OH", lat: 39.9612, lng: -82.9988, address: "155 E Broad St, Columbus, OH" }
+            ]
         };
 
         // Initialize Google Places Autocomplete
@@ -445,15 +461,71 @@
             document.getElementById('droneRow').style.display = hasDrone ? 'flex' : 'none';
             document.getElementById('liveStreamRow').style.display = hasLiveStream ? 'flex' : 'none';
             
+            // Show closest studio info
+            const location1 = document.getElementById('location1').value;
+            if (location1 && window.closestStudioInfo) {
+                document.getElementById('closestStudioRow').style.display = 'flex';
+                document.getElementById('closestStudioName').textContent = window.closestStudioInfo.name + 
+                    ' (' + window.closestStudioInfo.distance.toFixed(1) + ' miles)';
+            }
+            
             // Show results
             document.getElementById('resultsSection').style.display = 'block';
         }
 
-        // Calculate travel cost (simplified)
+        // Calculate travel cost from closest studio
         async function calculateTravelCost() {
-            // In production, this would use Google Distance Matrix API
-            // For now, return a placeholder or simple calculation
-            return 0; // Will be calculated based on actual distance
+            const location1 = document.getElementById('location1').value;
+            if (!location1) return 0;
+            
+            // Use Google Distance Matrix API to find closest studio
+            const service = new google.maps.DistanceMatrixService();
+            const destinations = CONFIG.studioLocations.map(loc => new google.maps.LatLng(loc.lat, loc.lng));
+            
+            try {
+                const result = await new Promise((resolve, reject) => {
+                    service.getDistanceMatrix({
+                        origins: [location1],
+                        destinations: destinations,
+                        travelMode: google.maps.TravelMode.DRIVING,
+                        unitSystem: google.maps.UnitSystem.IMPERIAL
+                    }, (response, status) => {
+                        if (status === 'OK') {
+                            resolve(response);
+                        } else {
+                            reject(status);
+                        }
+                    });
+                });
+                
+                // Find closest studio
+                let shortestDistance = Infinity;
+                let closestStudio = null;
+                
+                result.rows[0].elements.forEach((element, index) => {
+                    if (element.status === 'OK' && element.distance.value < shortestDistance) {
+                        shortestDistance = element.distance.value;
+                        closestStudio = CONFIG.studioLocations[index];
+                    }
+                });
+                
+                // Convert meters to miles and calculate cost
+                const miles = shortestDistance / 1609.34;
+                const roundTripMiles = miles * 2;
+                
+                // Store closest studio info for display
+                if (closestStudio) {
+                    window.closestStudioInfo = {
+                        name: closestStudio.name,
+                        distance: miles
+                    };
+                }
+                
+                return Math.round(roundTripMiles * CONFIG.travelRate);
+            } catch (error) {
+                console.error('Distance calculation error:', error);
+                return 0;
+            }
         }
 
         // Copy quote
