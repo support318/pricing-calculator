@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candid Studios - Travel Fee Calculator</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=GOOGLE_MAPS_API_KEY&libraries=places"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .candid-calculator {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        
+        .candid-calculator h2 {
+            color: #1a1a1a;
+            margin-bottom: 8px;
+            font-size: 24px;
+        }
+        
+        .candid-calculator .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .candid-section {
+            margin-bottom: 25px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .candid-section:last-of-type {
+            border-bottom: none;
+        }
+        
+        .candid-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .candid-input-group {
+            margin-bottom: 15px;
+        }
+        
+        .candid-input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .candid-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: border-color 0.2s;
+        }
+        
+        .candid-input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        
+        .candid-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        @media (max-width: 600px) {
+            .candid-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .candid-number-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .candid-number-input button {
+            width: 36px;
+            height: 36px;
+            border: 2px solid #007bff;
+            background: white;
+            color: #007bff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        .candid-number-input button:hover {
+            background: #007bff;
+            color: white;
+        }
+        
+        .candid-number-input input {
+            width: 70px;
+            text-align: center;
+            padding: 8px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        
+        .candid-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 10px;
+        }
+        
+        .candid-checkbox:hover {
+            border-color: #007bff;
+        }
+        
+        .candid-checkbox input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .candid-checkbox-label {
+            flex: 1;
+            cursor: pointer;
+        }
+        
+        .candid-checkbox-title {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .candid-checkbox-price {
+            color: #007bff;
+            font-weight: 600;
+        }
+        
+        .candid-results {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .candid-results h3 {
+            margin-bottom: 15px;
+            color: #1a1a1a;
+        }
+        
+        .candid-result-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .candid-result-row:last-child {
+            border-bottom: none;
+        }
+        
+        .candid-result-row.total {
+            font-size: 18px;
+            font-weight: 700;
+            color: #007bff;
+            border-top: 2px solid #007bff;
+            margin-top: 10px;
+            padding-top: 15px;
+        }
+        
+        .candid-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .candid-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .candid-btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .candid-btn-primary:hover {
+            background: #0056b3;
+        }
+        
+        .candid-btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .candid-btn-secondary:hover {
+            background: #545b62;
+        }
+        
+        .candid-note {
+            margin-top: 15px;
+            padding: 12px;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #856404;
+        }
+
+        .pac-container {
+            z-index: 10000 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="candid-calculator">
+        <h2>📸 Photography Pricing Calculator</h2>
+        <p class="subtitle">Get an instant estimate for your photography or videography project</p>
+        
+        <!-- Location Section -->
+        <div class="candid-section">
+            <h3>📍 Project Location</h3>
+            <div class="candid-input-group">
+                <label>Primary Location</label>
+                <input type="text" id="location1" class="candid-input" placeholder="Enter address (e.g., 123 Main St, Denver, CO)">
+            </div>
+            <div class="candid-input-group">
+                <label>Secondary Location (optional)</label>
+                <input type="text" id="location2" class="candid-input" placeholder="Enter second location if applicable">
+            </div>
+            <div class="candid-input-group">
+                <label>Additional Locations</label>
+                <input type="text" id="location3" class="candid-input" placeholder="Enter additional locations, separated by commas">
+            </div>
+        </div>
+        
+        <!-- Service Duration Section -->
+        <div class="candid-section">
+            <h3>⏱️ Service Duration</h3>
+            <div class="candid-row">
+                <div class="candid-input-group">
+                    <label>Photography Hours</label>
+                    <div class="candid-number-input">
+                        <button onclick="adjustHours('photo', -1)">−</button>
+                        <input type="number" id="photoHours" value="0" min="0" max="12">
+                        <button onclick="adjustHours('photo', 1)">+</button>
+                    </div>
+                </div>
+                <div class="candid-input-group">
+                    <label>Videography Hours</label>
+                    <div class="candid-number-input">
+                        <button onclick="adjustHours('video', -1)">−</button>
+                        <input type="number" id="videoHours" value="0" min="0" max="12">
+                        <button onclick="adjustHours('video', 1)">+</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Add-ons Section -->
+        <div class="candid-section">
+            <h3>✨ Add-ons</h3>
+            <label class="candid-checkbox">
+                <input type="checkbox" id="secondShooter">
+                <span class="candid-checkbox-label">
+                    <span class="candid-checkbox-title">Second Shooter</span>
+                </span>
+                <span class="candid-checkbox-price">$150/hr</span>
+            </label>
+            <label class="candid-checkbox">
+                <input type="checkbox" id="drone">
+                <span class="candid-checkbox-label">
+                    <span class="candid-checkbox-title">Drone Footage</span>
+                </span>
+                <span class="candid-checkbox-price">$400</span>
+            </label>
+            <label class="candid-checkbox">
+                <input type="checkbox" id="liveStream">
+                <span class="candid-checkbox-label">
+                    <span class="candid-checkbox-title">Live Streaming</span>
+                </span>
+                <span class="candid-checkbox-price">$800</span>
+            </label>
+        </div>
+        
+        <!-- Results Section -->
+        <div class="candid-results" id="resultsSection" style="display: none;">
+            <h3>💰 Cost Estimate</h3>
+            <div class="candid-result-row">
+                <span>Shooting Cost</span>
+                <span id="shootingCost">$0</span>
+            </div>
+            <div class="candid-result-row">
+                <span>Photo Editing</span>
+                <span id="photoEditingCost">$0</span>
+            </div>
+            <div class="candid-result-row">
+                <span>Video Editing</span>
+                <span id="videoEditingCost">$0</span>
+            </div>
+            <div class="candid-result-row" id="secondShooterRow" style="display: none;">
+                <span>Second Shooter</span>
+                <span id="secondShooterCost">$0</span>
+            </div>
+            <div class="candid-result-row" id="droneRow" style="display: none;">
+                <span>Drone Footage</span>
+                <span>$400</span>
+            </div>
+            <div class="candid-result-row" id="liveStreamRow" style="display: none;">
+                <span>Live Streaming</span>
+                <span>$800</span>
+            </div>
+            <div class="candid-result-row">
+                <span>Travel Fee</span>
+                <span id="travelCost">$0</span>
+            </div>
+            <div class="candid-result-row total">
+                <span>Total Estimate</span>
+                <span id="totalCost">$0</span>
+            </div>
+        </div>
+        
+        <div class="candid-buttons">
+            <button class="candid-btn candid-btn-primary" onclick="calculateTotal()">Calculate Estimate</button>
+            <button class="candid-btn candid-btn-secondary" onclick="copyQuote()">Copy Quote</button>
+        </div>
+        
+        <div class="candid-note">
+            <strong>Note:</strong> This is an estimate. Final pricing may vary based on project specifics. Contact us for a detailed quote.
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            shootingRate: 350,
+            photoEditingRate: 50,
+            videoEditingRate: 100,
+            minEditingHours: 3,
+            secondShooterRate: 150,
+            droneRate: 400,
+            liveStreamRate: 800,
+            travelRate: 0.73,
+            studioLocation: { lat: 39.7392, lng: -104.9903 } // Denver, CO
+        };
+
+        // Initialize Google Places Autocomplete
+        function initAutocomplete() {
+            const location1 = document.getElementById('location1');
+            const location2 = document.getElementById('location2');
+            const location3 = document.getElementById('location3');
+            
+            if (location1) {
+                new google.maps.places.Autocomplete(location1, { types: ['geocode'] });
+            }
+            if (location2) {
+                new google.maps.places.Autocomplete(location2, { types: ['geocode'] });
+            }
+            if (location3) {
+                new google.maps.places.Autocomplete(location3, { types: ['geocode'] });
+            }
+        }
+
+        // Adjust hours
+        function adjustHours(type, change) {
+            const input = document.getElementById(type + 'Hours');
+            let value = parseInt(input.value) || 0;
+            value = Math.max(0, Math.min(12, value + change));
+            input.value = value;
+        }
+
+        // Calculate total
+        async function calculateTotal() {
+            const photoHours = parseInt(document.getElementById('photoHours').value) || 0;
+            const videoHours = parseInt(document.getElementById('videoHours').value) || 0;
+            const hasSecondShooter = document.getElementById('secondShooter').checked;
+            const hasDrone = document.getElementById('drone').checked;
+            const hasLiveStream = document.getElementById('liveStream').checked;
+            
+            // Calculate shooting cost
+            const shootingCost = (photoHours + videoHours) * CONFIG.shootingRate;
+            
+            // Calculate editing costs
+            const photoEditingHours = Math.max(CONFIG.minEditingHours, photoHours / 2);
+            const videoEditingHours = Math.max(CONFIG.minEditingHours, videoHours / 2);
+            const photoEditingCost = photoEditingHours * CONFIG.photoEditingRate;
+            const videoEditingCost = videoEditingHours * CONFIG.videoEditingRate;
+            
+            // Calculate add-ons
+            const secondShooterCost = hasSecondShooter ? (photoHours + videoHours) * CONFIG.secondShooterRate : 0;
+            const droneCost = hasDrone ? CONFIG.droneRate : 0;
+            const liveStreamCost = hasLiveStream ? CONFIG.liveStreamRate : 0;
+            
+            // Calculate travel (simplified - in production would use Distance Matrix API)
+            const travelCost = await calculateTravelCost();
+            
+            // Total
+            const total = shootingCost + photoEditingCost + videoEditingCost + 
+                         secondShooterCost + droneCost + liveStreamCost + travelCost;
+            
+            // Update UI
+            document.getElementById('shootingCost').textContent = '$' + shootingCost.toLocaleString();
+            document.getElementById('photoEditingCost').textContent = '$' + photoEditingCost.toLocaleString();
+            document.getElementById('videoEditingCost').textContent = '$' + videoEditingCost.toLocaleString();
+            document.getElementById('travelCost').textContent = '$' + travelCost.toLocaleString();
+            document.getElementById('totalCost').textContent = '$' + total.toLocaleString();
+            
+            // Show/hide optional rows
+            document.getElementById('secondShooterRow').style.display = hasSecondShooter ? 'flex' : 'none';
+            document.getElementById('secondShooterCost').textContent = '$' + secondShooterCost.toLocaleString();
+            document.getElementById('droneRow').style.display = hasDrone ? 'flex' : 'none';
+            document.getElementById('liveStreamRow').style.display = hasLiveStream ? 'flex' : 'none';
+            
+            // Show results
+            document.getElementById('resultsSection').style.display = 'block';
+        }
+
+        // Calculate travel cost (simplified)
+        async function calculateTravelCost() {
+            // In production, this would use Google Distance Matrix API
+            // For now, return a placeholder or simple calculation
+            return 0; // Will be calculated based on actual distance
+        }
+
+        // Copy quote
+        function copyQuote() {
+            const total = document.getElementById('totalCost').textContent;
+            const quote = `Candid Studios Photography Quote\nTotal Estimate: ${total}\n\nContact us to book your date!`;
+            
+            navigator.clipboard.writeText(quote).then(() => {
+                alert('Quote copied to clipboard!');
+            });
+        }
+
+        // Initialize on load
+        window.onload = initAutocomplete;
+    </script>
+</body>
+</html>
